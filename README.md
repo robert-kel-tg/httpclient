@@ -1,6 +1,6 @@
 # httpclient
 
-* Http Client with cirquit breaker and retry mechanism
+* Http Client with Circuit Breaker and Retry mechanisms
 
 ## Installation
 ```bash
@@ -13,12 +13,16 @@ go get -u github.com/robertke/httpclient
 package main
 
 import (
-  "github.com/robertke/httpclient"
+	"bytes"
+	"github.com/robertke/httpclient"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"time"
 )
 
 func main() {
-  client := httpClient.NewClient(
-		httpClient.ClientSettings{
+	client := http.NewClient(
+		http.ClientSettings{
 			Name:          "Test Client",
 			MaxRequests:   100,
 			Interval:      time.Duration(3),
@@ -26,13 +30,29 @@ func main() {
 			CountRequests: 3,
 			FailureRation: 0.6,
 		},
-    )
-    
-    body := "Thats body!"
+	)
 
-    resp, err := client.Post(&httpClient.RequestSettings{
+	body := "That's body!"
+
+	resp, err := client.Post(&http.RequestSettings{
 		Url:  "https://httpbin.org/post",
 		Body: bytes.NewReader([]byte(body)),
 	})
+
+	if err != nil {
+		logrus.Errorf("Error reading response %v", err)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logrus.Errorf("Error closing body %v", err)
+		}
+	}()
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Errorf("Error reading body %v", err)
+	}
+	logrus.Printf("Printing response body \n %s", string(bodyBytes))
 }
 ```
