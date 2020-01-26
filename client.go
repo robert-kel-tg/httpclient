@@ -12,29 +12,31 @@ import (
 	"github.com/sony/gobreaker"
 )
 
-type Client interface {
-	Get(reqSettings *RequestSettings) (*http.Response, error)
-	Post(reqSettings *RequestSettings) (*http.Response, error)
-}
+type (
+	Client interface {
+		Get(reqSettings *RequestSettings) (*http.Response, error)
+		Post(reqSettings *RequestSettings) (*http.Response, error)
+	}
 
-type client struct {
-	clSettings ClientSettings
-	cb         *gobreaker.CircuitBreaker
-}
+	client struct {
+		clSettings ClientSettings
+		cb         *gobreaker.CircuitBreaker
+	}
 
-type RequestSettings struct {
-	Url  string
-	Body io.Reader
-}
+	RequestSettings struct {
+		Url  string
+		Body io.Reader
+	}
 
-type ClientSettings struct {
-	Name          string
-	MaxRequests   uint32
-	Interval      time.Duration
-	Timeout       time.Duration
-	CountRequests uint32
-	FailureRation float64
-}
+	ClientSettings struct {
+		Name          string
+		MaxRequests   uint32
+		Interval      time.Duration
+		Timeout       time.Duration
+		CountRequests uint32
+		FailureRation float64
+	}
+)
 
 func NewClient(clSettings ClientSettings) Client {
 	cb := gobreaker.NewCircuitBreaker(
@@ -76,7 +78,7 @@ func (c *client) Post(reqSettings *RequestSettings) (*http.Response, error) {
 func (c *client) do(method string, reqSettings *RequestSettings) (*http.Response, error) {
 	req, err := http.NewRequest(method, reqSettings.Url, reqSettings.Body)
 	if err != nil {
-		return nil, errors.New("Bla")
+		return nil, errors.New("request error")
 	}
 
 	body, err := c.cb.Execute(func() (interface{}, error) {
