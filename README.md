@@ -23,12 +23,14 @@ import (
 func main() {
 	client := http.NewClient(
 		http.ClientSettings{
-			Name:          "Test Client",
-			MaxRequests:   100,
-			Interval:      time.Duration(3),
-			Timeout:       time.Duration(5),
-			CountRequests: 3,
-			FailureRation: 0.6,
+			Name:          "TestHttpClient",
+			Timeout:                3000,
+			MaxConcurrentRequests:  3,
+			RequestVolumeThreshold: 3,
+			SleepWindow:            1000,
+			ErrorPercentThreshold:  1,
+			RetryAttempt:           3,
+			RetrySleep:             time.Millisecond * 5,
 		},
 	)
 
