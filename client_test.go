@@ -25,22 +25,27 @@ func TestClient(t *testing.T) {
 
 	httpClient := NewClient(
 		ClientSettings{
-			Name:          "Test Client",
-			MaxRequests:   1,
-			Interval:      time.Duration(3),
-			Timeout:       time.Duration(3),
-			CountRequests: 1,
-			FailureRatio:  0.6,
-			RetryNumber:   3,
-			RetryTimeout:  time.Millisecond * 5,
+			Name:                   "TestHttpClient",
+			Timeout:                3000,
+			MaxConcurrentRequests:  3,
+			RequestVolumeThreshold: 3,
+			SleepWindow:            1000,
+			ErrorPercentThreshold:  1,
+			RetryAttempt:           3,
+			RetrySleep:             time.Millisecond * 5,
 		},
 	)
 
-	res, _ := httpClient.Post(
+	res, err := httpClient.Post(
 		&RequestSettings{
 			Url: testServer.URL,
 		},
 	)
+
+	if err != nil {
+		t.Errorf("error was not expected %v", err)
+		t.FailNow()
+	}
 
 	body, _ := ioutil.ReadAll(res.Body)
 	bodyString := string(body)
@@ -56,20 +61,20 @@ func TestTimeoutClient(t *testing.T) {
 
 	testServer := httptest.NewServer(handlerFunc)
 
-	expError := `Post ` + testServer.URL + `: net/http: request canceled (Client.Timeout exceeded while awaiting headers)`
+	expError := `fallback failed with 'hystrix: timeout'. run error was 'hystrix: timeout'`
 
 	defer testServer.Close()
 
 	httpClient := NewClient(
 		ClientSettings{
-			Name:          "Test Client",
-			MaxRequests:   1,
-			Interval:      time.Duration(3),
-			Timeout:       time.Duration(3),
-			CountRequests: 1,
-			FailureRatio:  0.6,
-			RetryNumber:   3,
-			RetryTimeout:  time.Millisecond * 5,
+			Name:                   "TestHttpClient",
+			Timeout:                3000,
+			MaxConcurrentRequests:  3,
+			RequestVolumeThreshold: 3,
+			SleepWindow:            2000,
+			ErrorPercentThreshold:  1,
+			RetryAttempt:           3,
+			RetrySleep:             time.Millisecond * 5,
 		},
 	)
 

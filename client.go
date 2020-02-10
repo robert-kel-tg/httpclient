@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rafaeljesus/retry-go"
+	"github.com/robertke/httpclient/breaker"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sony/gobreaker"
 )
 
 type (
@@ -20,7 +19,7 @@ type (
 
 	client struct {
 		clSettings ClientSettings
-		cb         *gobreaker.CircuitBreaker
+		cb         breaker.CircuitBreaker
 	}
 
 	RequestSettings struct {
@@ -29,39 +28,31 @@ type (
 	}
 
 	ClientSettings struct {
-		Name          string
-		MaxRequests   uint32
-		Interval      time.Duration
-		Timeout       time.Duration
-		CountRequests uint32
-		FailureRatio  float64
-		RetryNumber   uint32
-		RetryTimeout  time.Duration
+		Name                   string
+		Timeout                int
+		MaxConcurrentRequests  int
+		RequestVolumeThreshold int
+		SleepWindow            int
+		ErrorPercentThreshold  int
+		RetryAttempt           int
+		RetrySleep             time.Duration
 	}
 )
 
 func NewClient(clSettings ClientSettings) Client {
-	cb := gobreaker.NewCircuitBreaker(
-		gobreaker.Settings{
-			Name:        clSettings.Name,
-			MaxRequests: clSettings.MaxRequests,
-			Interval:    clSettings.Interval * time.Second,
-			Timeout:     clSettings.Timeout,
-			ReadyToTrip: func(counts gobreaker.Counts) bool {
-				failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-				return counts.Requests >= clSettings.CountRequests && failureRatio >= clSettings.FailureRatio
-			},
-			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
-				log.WithFields(
-					log.Fields{
-						"name":      name,
-						"fromState": from,
-						"toState":   to,
-					},
-				)
-			},
-		},
-	)
+
+	log.Infof("initializing breaker: %s", clSettings.Name)
+	cb := breaker.CircuitBreaker{
+		Name:                   clSettings.Name,
+		Timeout:                clSettings.Timeout,
+		MaxConcurrentRequests:  clSettings.MaxConcurrentRequests,
+		RequestVolumeThreshold: clSettings.RequestVolumeThreshold,
+		SleepWindow:            clSettings.SleepWindow,
+		ErrorPercentThreshold:  clSettings.ErrorPercentThreshold,
+		RetryAttempt:           clSettings.RetryAttempt,
+		RetrySleep:             clSettings.RetrySleep,
+	}
+	breaker.Init(cb)
 
 	return &client{
 		clSettings,
@@ -83,26 +74,31 @@ func (c *client) do(method string, reqSettings *RequestSettings) (*http.Response
 		return nil, errors.New("request error")
 	}
 
-	body, err := c.cb.Execute(func() (interface{}, error) {
-		return retry.DoHTTP(func() (*http.Response, error) {
+	output := make(chan *http.Response, 1)
+	errorCh := c.cb.Execute(func() error {
+		var (
+			client = &http.Client{
+				Timeout: time.Second * 3,
+			}
+		)
+		resp, err := client.Do(req)
+		if nil != err {
+			return err
+		}
 
-			var (
-				client = &http.Client{
-					Timeout: time.Second * 3,
-				}
-			)
-
-			resp, err := client.Do(req)
-			return resp, err
-		},
-			int(c.clSettings.RetryNumber), c.clSettings.RetryTimeout)
+		output <- resp
+		return nil
+	}, func(err error) error {
+		if nil != err {
+			log.Errorf("In fallback function for breaker, error: %v", err)
+		}
+		return err
 	})
 
-	var response *http.Response
-
-	if r, ok := body.(*http.Response); ok {
-		response = r
+	select {
+	case out := <-output:
+		return out, nil
+	case err := <-errorCh:
+		return nil, err
 	}
-
-	return response, err
 }
