@@ -34,7 +34,9 @@ type (
 		Interval      time.Duration
 		Timeout       time.Duration
 		CountRequests uint32
-		FailureRation float64
+		FailureRatio  float64
+		RetryNumber   uint32
+		RetryTimeout  time.Duration
 	}
 )
 
@@ -47,7 +49,7 @@ func NewClient(clSettings ClientSettings) Client {
 			Timeout:     clSettings.Timeout,
 			ReadyToTrip: func(counts gobreaker.Counts) bool {
 				failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-				return counts.Requests >= clSettings.CountRequests && failureRatio >= clSettings.FailureRation
+				return counts.Requests >= clSettings.CountRequests && failureRatio >= clSettings.FailureRatio
 			},
 			OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
 				log.WithFields(
@@ -83,10 +85,17 @@ func (c *client) do(method string, reqSettings *RequestSettings) (*http.Response
 
 	body, err := c.cb.Execute(func() (interface{}, error) {
 		return retry.DoHTTP(func() (*http.Response, error) {
-			resp, err := http.DefaultClient.Do(req)
+
+			var (
+				client = &http.Client{
+					Timeout: time.Second * 3,
+				}
+			)
+
+			resp, err := client.Do(req)
 			return resp, err
 		},
-			3, time.Second*2)
+			int(c.clSettings.RetryNumber), c.clSettings.RetryTimeout)
 	})
 
 	var response *http.Response
