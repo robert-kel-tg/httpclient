@@ -61,8 +61,6 @@ func TestTimeoutClient(t *testing.T) {
 
 	testServer := httptest.NewServer(handlerFunc)
 
-	expError := `fallback failed with 'hystrix: timeout'. run error was 'hystrix: timeout'`
-
 	defer testServer.Close()
 
 	httpClient := NewClient(
@@ -93,6 +91,8 @@ func TestTimeoutClient(t *testing.T) {
 	if err != nil {
 		currentErr = err.Error()
 	}
+	
+	expError := `fallback failed with 'hystrix: timeout'. run error was 'hystrix: timeout'`
 
 	assert.Equal(t, expError, currentErr, "Expected response body to be %v, got %v", expError, currentErr)
 }
