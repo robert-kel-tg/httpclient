@@ -9,6 +9,7 @@ import (
 )
 
 type (
+	// Holder for CB properties
 	CircuitBreaker struct {
 		Name                   string
 		Timeout                int
