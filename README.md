@@ -15,7 +15,7 @@ package main
 import (
 	"bytes"
 	"github.com/robertke/httpclient"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"time"
 )
@@ -42,19 +42,19 @@ func main() {
 	})
 
 	if err != nil {
-		logrus.Errorf("Error reading response %v", err)
+		log.Errorf("Error reading response %v", err)
 	}
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			logrus.Errorf("Error closing body %v", err)
+			log.Errorf("Error closing body %v", err)
 		}
 	}()
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logrus.Errorf("Error reading body %v", err)
+		log.Errorf("Error reading body %v", err)
 	}
-	logrus.Printf("Printing response body \n %s", string(bodyBytes))
+	log.Printf("Printing response body \n %s", string(bodyBytes))
 }
 ```
