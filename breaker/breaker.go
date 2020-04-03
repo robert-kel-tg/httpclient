@@ -36,13 +36,11 @@ func Init(c CircuitBreaker) {
 
 // Execute wraps the function passed to it with a circuit breaker and a retry
 func (c *CircuitBreaker) Execute(f func() error, fallback func(err error) error) chan error {
-	errChan := hystrix.Go(c.Name, // the name of the circuit breaker.
-		//the inlined func to run inside the breaker.
+	errChan := hystrix.Go(c.Name,
 		func() error {
 			err := retry.Do(f, c.RetryAttempt, c.RetrySleep)
 			return err
 		},
-		// the fallback func. logging and return the error.
 		fallback,
 	)
 	return errChan
