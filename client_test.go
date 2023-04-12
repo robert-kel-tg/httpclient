@@ -24,16 +24,14 @@ func TestClient(t *testing.T) {
 	defer testServer.Close()
 
 	httpClient := NewClient(
-		ClientSettings{
-			Name:                   "TestHttpClient",
-			Timeout:                3000,
-			MaxConcurrentRequests:  3,
-			RequestVolumeThreshold: 3,
-			SleepWindow:            1000,
-			ErrorPercentThreshold:  1,
-			RetryAttempt:           3,
-			RetrySleep:             time.Millisecond * 5,
-		},
+		"TestHttpClient",
+		WithTimeout(3000),
+		WithMaxConcurrentRequests(3),
+		WithRequestVolumeThreshold(3),
+		WithSleepWindow(1000),
+		WithErrorPercentThreshold(1),
+		WithRetryAttempt(3),
+		WithRetrySleep(time.Millisecond*5),
 	)
 
 	res, err := httpClient.Post(
@@ -66,16 +64,14 @@ func TestTimeoutClient(t *testing.T) {
 	defer testServer.Close()
 
 	httpClient := NewClient(
-		ClientSettings{
-			Name:                   "TestHttpClient",
-			Timeout:                3000,
-			MaxConcurrentRequests:  3,
-			RequestVolumeThreshold: 3,
-			SleepWindow:            2000,
-			ErrorPercentThreshold:  1,
-			RetryAttempt:           3,
-			RetrySleep:             time.Millisecond * 5,
-		},
+		"TestHttpClient",
+		WithTimeout(3000),
+		WithMaxConcurrentRequests(3),
+		WithRequestVolumeThreshold(3),
+		WithSleepWindow(2000),
+		WithErrorPercentThreshold(1),
+		WithRetryAttempt(3),
+		WithRetrySleep(time.Millisecond*5),
 	)
 
 	_, err := httpClient.Post(
