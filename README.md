@@ -4,7 +4,7 @@
 
 ## Installation
 ```bash
-go get -u github.com/robertke/httpclient
+go get -u github.com/robert-kel-tg/httpclient
 ```
 
 ## Usage
