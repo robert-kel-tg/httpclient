@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/robertke/httpclient/breaker"
+	"github.com/robert-kel-tg/httpclient/breaker"
 
 	log "github.com/sirupsen/logrus"
 )
