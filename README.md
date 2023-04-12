@@ -14,24 +14,26 @@ package main
 
 import (
 	"bytes"
-	"github.com/robertke/httpclient"
+	"github.com/robert-kel-tg/httpclient"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"time"
 )
 
 func main() {
-	client := http.NewClient(
-		http.ClientSettings{
-			Name:          "TestHttpClient",
-			Timeout:                3000,
-			MaxConcurrentRequests:  3,
-			RequestVolumeThreshold: 3,
-			SleepWindow:            1000,
-			ErrorPercentThreshold:  1,
-			RetryAttempt:           3,
-			RetrySleep:             time.Millisecond * 5,
-		},
+  	// With default values applied
+	client := http.NewClient("TestHttpClient")
+
+  	// Or you can specify one or more values
+	client := NewClient(
+		"TestHttpClient",
+		WithTimeout(3000),
+		WithMaxConcurrentRequests(3),
+		WithRequestVolumeThreshold(3),
+		WithSleepWindow(1000),
+		WithErrorPercentThreshold(1),
+		WithRetryAttempt(3),
+		WithRetrySleep(time.Millisecond*5),
 	)
 
 	body := "That's body!"
