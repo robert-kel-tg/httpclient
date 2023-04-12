@@ -6,56 +6,48 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/robertke/httpclient/breaker"
+	"github.com/robert-kel-tg/httpclient/breaker"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type (
-	Client interface {
-		Get(reqSettings *RequestSettings) (*http.Response, error)
-		Post(reqSettings *RequestSettings) (*http.Response, error)
-	}
-
 	client struct {
-		clSettings ClientSettings
-		cb         breaker.CircuitBreaker
+		settings Settings
+		cb       breaker.CircuitBreaker
 	}
 
 	RequestSettings struct {
 		Url  string
 		Body io.Reader
 	}
-
-	ClientSettings struct {
-		Name                   string
-		Timeout                int
-		MaxConcurrentRequests  int
-		RequestVolumeThreshold int
-		SleepWindow            int
-		ErrorPercentThreshold  int
-		RetryAttempt           int
-		RetrySleep             time.Duration
-	}
 )
 
-func NewClient(clSettings ClientSettings) Client {
+func NewClient(name string, opts ...Setting) *client {
 
-	log.Infof("initializing breaker: %s", clSettings.Name)
+	var settings Settings
+
+	for _, opt := range opts {
+		if err := opt(&settings); err != nil {
+			return nil
+		}
+	}
+
+	log.Infof("initializing breaker: %s", name)
 	cb := breaker.CircuitBreaker{
-		Name:                   clSettings.Name,
-		Timeout:                clSettings.Timeout,
-		MaxConcurrentRequests:  clSettings.MaxConcurrentRequests,
-		RequestVolumeThreshold: clSettings.RequestVolumeThreshold,
-		SleepWindow:            clSettings.SleepWindow,
-		ErrorPercentThreshold:  clSettings.ErrorPercentThreshold,
-		RetryAttempt:           clSettings.RetryAttempt,
-		RetrySleep:             clSettings.RetrySleep,
+		Name:                   name,
+		Timeout:                settings.Timeout,
+		MaxConcurrentRequests:  settings.MaxConcurrentRequests,
+		RequestVolumeThreshold: settings.RequestVolumeThreshold,
+		SleepWindow:            settings.SleepWindow,
+		ErrorPercentThreshold:  settings.ErrorPercentThreshold,
+		RetryAttempt:           settings.RetryAttempt,
+		RetrySleep:             settings.RetrySleep,
 	}
 	breaker.Init(cb)
 
 	return &client{
-		clSettings,
+		settings,
 		cb,
 	}
 }
